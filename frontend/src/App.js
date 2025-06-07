@@ -32,9 +32,11 @@ function App() {
   const [keyword, setKeyword] = useState('');
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [activeGroup, setActiveGroup] = useState(null); // 활성화된 그룹 버튼 상태
+  const [activeGroup, setActiveGroup] = useState(null);
+  const [searchTimeout, setSearchTimeout] = useState(null);
 
   // 오늘 날짜를 YYYY-MM-DD 형식으로 반환
   const getToday = () => {
@@ -61,59 +63,76 @@ function App() {
     setStartDate(getDateBefore(days));
   };
 
-  // 그룹 버튼 클릭 핸들러
-  const handleGroupClick = (groupName) => {
-      const combinedKeywords = getCombinedKeywords(groupName);
-      setKeyword(combinedKeywords); // 검색 입력창에도 키워드 표시
-      setActiveGroup(groupName); // 클릭된 버튼 활성화 상태로 설정
-      searchNews(combinedKeywords); // 해당 키워드로 뉴스 검색 실행
-  };
-
-  // 뉴스 검색 함수 (키워드를 인자로 받을 수 있도록 수정)
+  // 뉴스 검색 함수 (디바운스 적용)
   const searchNews = async (searchKeyword = keyword) => {
-    if (!searchKeyword) return; // 인자로 받은 키워드 또는 현재 keyword state 사용
+    if (!searchKeyword) return;
 
     setLoading(true);
+    setError(null);
+
     try {
       const response = await fetch(
         `https://newsletter-app-mmv8.onrender.com/api/news/search?keyword=${encodeURIComponent(searchKeyword)}&startDate=${startDate}&endDate=${endDate}`
       );
+      
+      if (!response.ok) {
+        throw new Error('서버 응답이 올바르지 않습니다.');
+      }
+
       const data = await response.json();
       setNews(data.articles || []);
     } catch (error) {
       console.error('Error fetching news:', error);
-      alert('뉴스를 가져오는데 실패했습니다.');
+      setError('뉴스를 가져오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
+      setNews([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  // 디바운스된 검색 함수
+  const debouncedSearch = (searchKeyword) => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    setSearchTimeout(setTimeout(() => searchNews(searchKeyword), 300));
+  };
+
+  // 그룹 버튼 클릭 핸들러
+  const handleGroupClick = (groupName) => {
+    const combinedKeywords = getCombinedKeywords(groupName);
+    setKeyword(combinedKeywords);
+    setActiveGroup(groupName);
+    debouncedSearch(combinedKeywords);
   };
 
   return (
     <div className="App">
       <header className="App-header">
         <h1>뉴스 검색</h1>
-        {/* 그룹 버튼 섹션 추가 */}
         <div className="group-buttons-container">
           {Object.keys(keywordGroups).map(groupName => (
             <button
               key={groupName}
-              className={`group-button ${activeGroup === groupName ? 'active' : ''}`} // active 클래스 추가
+              className={`group-button ${activeGroup === groupName ? 'active' : ''}`}
               onClick={() => handleGroupClick(groupName)}
+              disabled={loading}
             >
               {groupName}
             </button>
           ))}
         </div>
-        {/* 기존 검색 및 날짜 선택 컨테이너 */}
         <div className="search-container">
           <input
             type="text"
             value={keyword}
             onChange={(e) => {
-                setKeyword(e.target.value);
-                setActiveGroup(null); // 사용자가 직접 입력하면 그룹 버튼 비활성화
+              setKeyword(e.target.value);
+              setActiveGroup(null);
+              debouncedSearch(e.target.value);
             }}
             placeholder="검색어를 입력하세요"
-            onKeyPress={(e) => e.key === 'Enter' && searchNews()}
+            disabled={loading}
           />
           <div className="date-range-container">
             <div className="date-range">
@@ -147,30 +166,52 @@ function App() {
               </button>
             </div>
           </div>
-          <button className="search-button" onClick={() => searchNews()}>검색</button> {/* searchNews 호출 방식 수정 */}
+          <button 
+            className="search-button" 
+            onClick={() => searchNews()}
+            disabled={loading}
+          >
+            {loading ? '검색 중...' : '검색'}
+          </button>
         </div>
       </header>
       <main>
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
         {loading ? (
-          <div className="loading">검색 중...</div>
+          <div className="loading">
+            <div className="loading-spinner"></div>
+            <span>검색 중...</span>
+          </div>
         ) : (
           <div className="news-container">
-            {news.map((article, index) => (
-              <div key={index} className="news-item">
-                <h2>{article.title}</h2>
-                <p>{article.description}</p>
-                <div className="news-meta">
-                  <span className="news-date">{new Date(article.pubDate).toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}</span>
-                </div>
-                <a href={article.link} target="_blank" rel="noopener noreferrer">
-                  기사 보기
-                </a>
+            {news.length === 0 && !error ? (
+              <div className="no-results">
+                검색 결과가 없습니다.
               </div>
-            ))}
+            ) : (
+              news.map((article, index) => (
+                <div key={index} className="news-item">
+                  <h2>{article.title}</h2>
+                  <p>{article.description}</p>
+                  <div className="news-meta">
+                    <span className="news-date">
+                      {new Date(article.pubDate).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <a href={article.link} target="_blank" rel="noopener noreferrer">
+                    기사 보기
+                  </a>
+                </div>
+              ))
+            )}
           </div>
         )}
       </main>
