@@ -261,15 +261,29 @@ button:hover {
 @media (max-width: 768px) {
   .news-container {
     grid-template-columns: 1fr;
+    padding: 10px;
   }
   
   input {
     width: 100%;
-    max-width: 300px;
+    padding: 12px 20px;
+    font-size: 15px;
+    box-sizing: border-box;
   }
   
   .search-container {
     flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 0 15px;
+    box-sizing: border-box;
+  }
+
+  .search-input-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     align-items: center;
   }
 
@@ -277,11 +291,57 @@ button:hover {
     flex-direction: column;
     align-items: center;
     gap: 10px;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .date-range {
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+    align-items: center;
+  }
+
+  .date-range input[type="date"] {
+    width: 100%;
+    max-width: 250px;
+    box-sizing: border-box;
+  }
+
+  .date-range span {
+    margin: 5px 0;
+  }
+
+  .date-buttons {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .date-button {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .search-button {
+    width: 100%;
+    max-width: 300px;
+    padding: 10px 20px;
+    font-size: 15px;
+    box-sizing: border-box;
+    margin-top: 15px;
   }
 
   .group-buttons-container {
     flex-wrap: wrap;
     justify-content: center;
+    gap: 8px;
+  }
+
+  .group-button {
+    padding: 8px 16px;
+    font-size: 14px;
   }
 }
 
