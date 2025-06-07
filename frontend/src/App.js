@@ -76,7 +76,7 @@ function App() {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:3001/api/news/search?keyword=${encodeURIComponent(searchKeyword)}&startDate=${startDate}&endDate=${endDate}`
+        `https://newsletter-app-mmv8.onrender.com/api/news/search?keyword=${encodeURIComponent(searchKeyword)}&startDate=${startDate}&endDate=${endDate}`
       );
       const data = await response.json();
       setNews(data.articles || []);
