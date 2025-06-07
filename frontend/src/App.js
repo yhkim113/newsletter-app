@@ -129,7 +129,11 @@ function App() {
             onChange={(e) => {
               setKeyword(e.target.value);
               setActiveGroup(null);
-              debouncedSearch(e.target.value);
+            }}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                searchNews();
+              }
             }}
             placeholder="검색어를 입력하세요"
             disabled={loading}
